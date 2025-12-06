@@ -1,445 +1,662 @@
 \documentclass[11pt,a4paper]{article}
 
 \usepackage[utf8]{inputenc}
-\usepackage[margin=0.9in]{geometry}
+\usepackage[margin=1in]{geometry}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{xcolor}
+\usepackage{listings}
 \usepackage{booktabs}
-\usepackage{amsmath}
 \usepackage{tikz}
-\usepackage{float}
-\usepackage{enumitem}
-\usetikzlibrary{shapes.geometric, arrows, positioning, fit, backgrounds}
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit}
 
-% Image path for Overleaf compatibility
-\graphicspath{{images/}}
+% Colors
+\definecolor{primaryblue}{RGB}{46, 134, 171}
+\definecolor{secondarygreen}{RGB}{34, 197, 94}
+\definecolor{warningyellow}{RGB}{234, 179, 8}
+\definecolor{dangerred}{RGB}{239, 68, 68}
+\definecolor{codebg}{RGB}{245, 245, 245}
 
-% Clean color palette
-\definecolor{primary}{RGB}{37, 99, 235}
-\definecolor{success}{RGB}{22, 163, 74}
-\definecolor{warning}{RGB}{234, 179, 8}
-\definecolor{danger}{RGB}{220, 38, 38}
-\definecolor{lightbg}{RGB}{248, 250, 252}
-
-\hypersetup{colorlinks=true, linkcolor=primary, urlcolor=primary}
-
-\title{
-    \vspace{-1.5cm}
-    \textbf{Agentic Receipt Processing Pipeline}\\[0.4em]
-    \large Multi-Layer Ensemble Learning with Human-in-the-Loop Feedback\\[0.3em]
-    \normalsize Advanced Machine Learning --- Graduate Course Project
+% Hyperlink styling
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primaryblue,
+    urlcolor=primaryblue
 }
-\author{}
-\date{December 2024}
+
+% Code listing style
+\lstset{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{gray}
+}
+
+\title{\textbf{Receipt Automation Pipeline}\\[0.5em]\large Technical Documentation for Team Members}
+\author{Raghu and Friends}
+\date{December 2025}
 
 \begin{document}
+
 \maketitle
 
-%=============================================================================
-\section{What This Project Does}
-%=============================================================================
+\tableofcontents
+\newpage
 
-We built an \textbf{intelligent system that processes receipt images automatically}. Given a photo of a receipt, the system:
+% ============================================================================
+\section{Overview: What Does This Pipeline Do?}
+% ============================================================================
 
-\begin{enumerate}[itemsep=2pt]
-    \item \textbf{Classifies} --- Is this actually a receipt? (vs invoice, letter, etc.)
-    \item \textbf{Reads} --- Extracts all text using OCR
-    \item \textbf{Understands} --- Finds the vendor name, date, and total amount
-    \item \textbf{Validates} --- Checks for suspicious patterns (anomaly detection)
-    \item \textbf{Decides} --- Approve, send for review, or reject
-    \item \textbf{Learns} --- Improves from human feedback over time
+This pipeline automatically processes receipt images and makes decisions about them. Think of it as a smart assistant that:
+
+\begin{enumerate}
+    \item \textbf{Looks} at an uploaded receipt image
+    \item \textbf{Reads} all the text on it
+    \item \textbf{Understands} what the text means (vendor name, date, total amount)
+    \item \textbf{Checks} if anything looks suspicious
+    \item \textbf{Decides} whether to approve, reject, or flag for human review
 \end{enumerate}
 
-\subsection{Why Is This an ``Agentic'' Pipeline?}
+The entire process is automated and learns from human feedback over time.
 
-Unlike traditional ML pipelines that run linearly, our system makes \textbf{autonomous decisions}:
-\begin{itemize}[itemsep=2pt]
-    \item Retries OCR automatically if quality is low
-    \item Routes uncertain cases to human review
-    \item Updates its own model weights based on feedback
-    \item Chooses different processing paths based on intermediate results
-\end{itemize}
-
-This is orchestrated using \textbf{LangGraph}, which defines the workflow as a state machine with conditional branching.
-
-%=============================================================================
-\section{Pipeline Architecture}
-%=============================================================================
+\subsection{High-Level Flow}
 
 \begin{center}
 \begin{tikzpicture}[
-    node distance=0.7cm,
-    layer/.style={rectangle, draw, rounded corners=4pt, minimum width=11cm, minimum height=1.1cm, fill=#1, align=center, font=\small},
-    arrow/.style={->, thick, >=stealth, color=gray}
+    node distance=1.5cm,
+    box/.style={rectangle, draw, rounded corners, minimum width=2.5cm, minimum height=1cm, align=center, fill=primaryblue!10},
+    arrow/.style={->, thick, >=stealth}
 ]
-    \node[layer=primary!12] (l1) {\textbf{Layer 1: Classification Ensemble} --- ViT + ResNet18 (Accuracy: 100\%)};
-    \node[layer=success!12, below=of l1] (l2) {\textbf{Layer 2: OCR} --- EasyOCR with auto-retry (89\% above 50\% confidence)};
-    \node[layer=primary!12, below=of l2] (l3) {\textbf{Layer 3: Field Extraction Ensemble} --- LayoutLM + Regex + Position + NER (F1: 79\%)};
-    \node[layer=warning!15, below=of l3] (l4) {\textbf{Layer 4: Anomaly Detection Ensemble} --- IsoForest + XGBoost + LogReg + SVM (Accuracy: 100\%)};
-    \node[layer=lightbg, below=of l4] (l5) {\textbf{Layer 5: Agent Decision} --- LangGraph workflow $\rightarrow$ APPROVE / REVIEW / REJECT};
+    \node[box] (input) {Upload\\Image};
+    \node[box, right=of input] (classify) {Classify\\Document};
+    \node[box, right=of classify] (ocr) {Extract\\Text (OCR)};
+    \node[box, right=of ocr] (extract) {Extract\\Fields};
+    \node[box, below=of extract] (anomaly) {Anomaly\\Detection};
+    \node[box, left=of anomaly] (decision) {Make\\Decision};
+    \node[box, left=of decision] (output) {Output\\Result};
     
-    \draw[arrow] (l1) -- (l2);
-    \draw[arrow] (l2) -- (l3);
-    \draw[arrow] (l3) -- (l4);
-    \draw[arrow] (l4) -- (l5);
+    \draw[arrow] (input) -- (classify);
+    \draw[arrow] (classify) -- (ocr);
+    \draw[arrow] (ocr) -- (extract);
+    \draw[arrow] (extract) -- (anomaly);
+    \draw[arrow] (anomaly) -- (decision);
+    \draw[arrow] (decision) -- (output);
 \end{tikzpicture}
 \end{center}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.95\textwidth]{pipeline_summary.png}
-    \caption{Pipeline evaluation summary: 1,000 receipts processed with 95\% success rate, 65\% auto-approved}
-\end{figure}
+% ============================================================================
+\section{Layer 1: Setup and Dependencies}
+% ============================================================================
 
-%=============================================================================
-\section{Layer 1: Document Classification Ensemble}
-%=============================================================================
+\subsection{What's Happening Here?}
 
-\subsection{The Problem}
-Before processing, we need to verify the image is actually a receipt (not a letter, form, or random photo).
+The first few cells install and import all the tools we need:
 
-\subsection{Our Approach: Ensemble of 2 Models}
+\begin{itemize}
+    \item \textbf{PyTorch} -- The deep learning framework that runs our neural networks
+    \item \textbf{Transformers (HuggingFace)} -- Pre-trained models for vision and language
+    \item \textbf{EasyOCR} -- Reads text from images
+    \item \textbf{LangGraph} -- Orchestrates the pipeline as a workflow
+    \item \textbf{Gradio} -- Creates the web interface
+\end{itemize}
 
-\begin{table}[H]
+\subsection{Key Configuration}
+
+\begin{lstlisting}
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+MODELS_DIR = 'models/'
+\end{lstlisting}
+
+\begin{itemize}
+    \item Uses GPU if available (much faster), otherwise falls back to CPU
+    \item All trained models are saved in the \texttt{models/} folder
+\end{itemize}
+
+% ============================================================================
+\section{Layer 2: Document Classification}
+% ============================================================================
+
+\subsection{Purpose}
+
+Before processing a receipt, we need to verify it actually \textit{is} a receipt. This layer answers: ``Is this image a receipt, invoice, or something else?''
+
+\subsection{How It Works}
+
+We use an \textbf{ensemble} of image classifiers -- multiple models that vote together:
+
+\begin{table}[h]
 \centering
-\begin{tabular}{llcp{5cm}}
+\begin{tabular}{lll}
 \toprule
-\textbf{Model} & \textbf{Architecture} & \textbf{Weight} & \textbf{What It's Good At} \\
+\textbf{Model} & \textbf{Type} & \textbf{Role} \\
 \midrule
-ViT-Tiny & Vision Transformer & 60\% & Understanding overall document structure \\
-ResNet-18 & CNN (trained on RVL-CDIP) & 40\% & Catching fine-grained visual patterns \\
+ViT-Tiny & Vision Transformer & Primary classifier \\
+ResNet-18 & Convolutional Neural Network & Secondary classifier \\
+Stacking Classifier & Meta-learner & Combines both predictions \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{How the Ensemble Works}
-We use \textbf{weighted soft voting}:
-\[
-P(\text{receipt}) = 0.6 \times P_{\text{ViT}}(\text{receipt}) + 0.4 \times P_{\text{ResNet}}(\text{receipt})
-\]
+\subsection{Why Ensemble?}
 
-If models disagree significantly, confidence is reduced and the receipt is flagged for review.
+No single model is perfect. By combining multiple models:
+\begin{itemize}
+    \item ViT is good at understanding overall document structure
+    \item ResNet catches fine-grained visual patterns
+    \item The stacking classifier learns which model to trust in different situations
+\end{itemize}
 
-\subsection{Results}
+\subsection{Output}
 
-\begin{table}[H]
-\centering
-\begin{tabular}{lcccc}
-\toprule
-& \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{AUC} \\
-\midrule
-ViT (Single Model) & 98.0\% & 96.8\% & 100.0\% & 0.997 \\
-\textbf{Ensemble (ViT + ResNet)} & \textbf{100.0\%} & \textbf{100.0\%} & \textbf{100.0\%} & \textbf{1.000} \\
-\midrule
-\textit{Improvement} & \textit{+2.0\%} & \textit{+3.2\%} & \textit{---} & \textit{+0.003} \\
-\bottomrule
-\end{tabular}
-\caption{Ensemble achieves perfect classification on test set (100 samples)}
-\end{table}
+\begin{lstlisting}
+{
+    'is_receipt': True,
+    'confidence': 0.94,
+    'label': 'receipt'
+}
+\end{lstlisting}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.98\textwidth]{classifier_evaluation.png}
-    \caption{Classification evaluation: confusion matrices show ensemble eliminates all false positives; ROC curves show AUC improvement from 0.997 to 1.000}
-\end{figure}
+% ============================================================================
+\section{Layer 3: OCR (Optical Character Recognition)}
+% ============================================================================
 
-%=============================================================================
-\section{Layer 2: OCR (Text Extraction)}
-%=============================================================================
+\subsection{Purpose}
 
-\subsection{The Problem}
-Receipt images are often blurry, skewed, or poorly lit. Standard OCR fails frequently.
+Convert the image into readable text. This is the ``eyes'' of our system.
 
-\subsection{Our Approach: EasyOCR with Retry Logic}
+\subsection{How It Works}
 
-\begin{enumerate}[itemsep=2pt]
-    \item Run EasyOCR on the original image
-    \item If average confidence $< 40\%$ OR fewer than 3 text regions detected:
+We use \textbf{EasyOCR} which:
+\begin{enumerate}
+    \item Scans the image for text regions
+    \item Returns each detected word with:
     \begin{itemize}
-        \item Attempt 1: Increase contrast by 50\%
-        \item Attempt 2: Apply sharpening filter
-        \item Attempt 3: Convert to grayscale
+        \item The text itself
+        \item Bounding box coordinates (where on the image)
+        \item Confidence score (how sure it is)
     \end{itemize}
-    \item Return best result (up to 3 retries)
 \end{enumerate}
 
-\subsection{Results}
-\begin{itemize}[itemsep=2pt]
-    \item \textbf{Mean confidence: 73.77\%} (Median: 77.46\%)
-    \item \textbf{31\%} of text regions detected with high confidence ($>$85\%)
-    \item \textbf{58\%} medium confidence (50-85\%)
-    \item \textbf{11\%} low confidence ($<$50\%) --- these are flagged
+\subsection{Retry Logic}
+
+If OCR quality is low (confidence $< 40\%$ or fewer than 3 text regions), the system automatically:
+\begin{enumerate}
+    \item Increases image contrast
+    \item Sharpens the image
+    \item Converts to grayscale
+    \item Retries OCR (up to 3 attempts)
+\end{enumerate}
+
+\subsection{Output Example}
+
+\begin{lstlisting}
+[
+    {'text': 'STARBUCKS', 'confidence': 0.95, 'bbox': [[10,20], [100,20], ...]},
+    {'text': '12/05/2024', 'confidence': 0.88, 'bbox': [[10,50], [80,50], ...]},
+    {'text': '$15.99', 'confidence': 0.92, 'bbox': [[10,200], [60,200], ...]}
+]
+\end{lstlisting}
+
+% ============================================================================
+\section{Layer 4: Field Extraction (Ensemble)}
+% ============================================================================
+
+\subsection{Purpose}
+
+Turn raw OCR text into structured data. We want to find:
+\begin{itemize}
+    \item \textbf{Vendor} -- Who issued the receipt (e.g., ``Starbucks'')
+    \item \textbf{Date} -- When the transaction occurred
+    \item \textbf{Total} -- The amount paid
 \end{itemize}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.95\textwidth]{ocr_evaluation.png}
-    \caption{OCR performance: 200 text regions analyzed. 89\% of regions above 50\% confidence threshold.}
-\end{figure}
+\subsection{The Ensemble Approach}
 
-%=============================================================================
-\section{Layer 3: Field Extraction Ensemble}
-%=============================================================================
+We use \textbf{4 different strategies} and combine their results:
 
-\subsection{The Problem}
-Extracting structured data (vendor, date, total) from raw OCR text is challenging because:
-\begin{itemize}[itemsep=1pt]
-    \item Vendors can be logos, abbreviated names, or typos
-    \item Dates come in many formats (12/05/24, Dec 5, 2024, etc.)
-    \item ``Total'' can be confused with subtotal, tax, or tip
-\end{itemize}
-
-\subsection{Our Approach: 4-Strategy Ensemble}
-
-\begin{table}[H]
+\begin{table}[h]
 \centering
 \begin{tabular}{llp{6cm}}
 \toprule
 \textbf{Strategy} & \textbf{Weight} & \textbf{How It Works} \\
 \midrule
-\textbf{LayoutLMv3} & 50\% & Deep learning model that understands document layout --- ``this text near the top is probably the vendor'' \\
-\textbf{Regex Patterns} & 30\% & Pattern matching: \texttt{\$XX.XX} = amount, \texttt{MM/DD/YYYY} = date \\
-\textbf{Position-Based} & 12\% & Rules: vendor is at top, total is at bottom \\
-\textbf{NER (SpaCy)} & 8\% & Named Entity Recognition for organization names \\
+LayoutLM & 50\% & Deep learning model that understands document layout \\
+Regex & 30\% & Pattern matching (e.g., \texttt{\$XX.XX} for totals) \\
+Position & 12\% & Uses location on page (vendor = top, total = bottom) \\
+NER & 8\% & Named Entity Recognition for dates and organizations \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Cascade Logic}
-\begin{itemize}[itemsep=2pt]
-    \item If LayoutLM confidence $\geq 80\%$: use LayoutLM directly (it's very accurate when confident)
-    \item Otherwise: combine all 4 strategies using weighted voting
+\subsection{LayoutLM Cascade}
+
+LayoutLM is our strongest model. We use a ``cascade'' approach:
+\begin{enumerate}
+    \item If LayoutLM confidence $\geq 80\%$: Use LayoutLM result directly
+    \item Otherwise: Combine all 4 strategies using weighted voting
+\end{enumerate}
+
+\subsection{Why This Design?}
+
+\begin{itemize}
+    \item LayoutLM is powerful but sometimes uncertain
+    \item Regex is fast and reliable for common formats
+    \item Position-based rules work well for standard receipts
+    \item Combining them gives robust results across different receipt types
 \end{itemize}
 
-\subsection{Results}
+% ============================================================================
+\section{Layer 5: Anomaly Detection}
+% ============================================================================
 
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Field} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
-\midrule
-Vendor & 78\% & 72\% & 75\% \\
-Date & 85\% & 82\% & 83\% \\
-Total & 88\% & 85\% & 86\% \\
-Amount & 72\% & 68\% & 70\% \\
-\midrule
-\textbf{Average} & \textbf{81\%} & \textbf{77\%} & \textbf{79\%} \\
-\bottomrule
-\end{tabular}
-\caption{Field extraction performance by field type}
-\end{table}
+\subsection{Purpose}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.95\textwidth]{layoutlm_field_extraction.png}
-    \caption{Field extraction: ``Total'' achieves highest F1 (86\%), ``Date'' is most reliably detected (83\% F1)}
-\end{figure}
-
-%=============================================================================
-\section{Layer 4: Anomaly Detection Ensemble}
-%=============================================================================
-
-\subsection{The Problem}
-We need to catch suspicious receipts before auto-approval:
-\begin{itemize}[itemsep=1pt]
-    \item Unusually high amounts (\$5,000 for a coffee?)
+Flag suspicious receipts before they're approved. Catches things like:
+\begin{itemize}
+    \item Unusually high amounts (\$50,000 lunch?)
     \item Missing vendor name
-    \item Invalid or future dates
-    \item Inconsistent patterns
+    \item Invalid dates
+    \item Suspicious patterns
 \end{itemize}
 
-\subsection{Our Approach: 4-Model Ensemble}
+\subsection{The Ensemble}
 
-\begin{table}[H]
+We combine 4 anomaly detection methods:
+
+\begin{table}[h]
 \centering
 \begin{tabular}{llp{5cm}}
 \toprule
-\textbf{Model} & \textbf{Weight} & \textbf{What It Does} \\
+\textbf{Model} & \textbf{Weight} & \textbf{Approach} \\
 \midrule
-Isolation Forest & 35\% & Isolates outliers using random trees \\
-XGBoost Classifier & 30\% & Gradient boosting on labeled anomalies \\
+Isolation Forest & 35\% & Finds outliers by isolating unusual points \\
+XGBoost & 30\% & Gradient boosting classifier trained on labeled anomalies \\
 HistGradientBoosting & 20\% & Handles missing values natively \\
-One-Class SVM & 15\% & Kernel-based boundary around ``normal'' \\
+One-Class SVM & 15\% & Kernel-based boundary around normal data \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Features Used (8 total)}
-\begin{itemize}[itemsep=1pt]
-    \item Amount and $\log(\text{amount})$
-    \item Vendor name length (missing = 0)
-    \item Date validity (1 = valid, 0 = invalid)
+\subsection{Features Used}
+
+The models look at:
+\begin{itemize}
+    \item Amount (and log of amount)
+    \item Vendor name length
+    \item Whether the date is valid
     \item Number of line items
-    \item Hour of transaction
+    \item Time of transaction
     \item Amount per item
-    \item Weekend indicator
+    \item Weekend vs weekday
 \end{itemize}
 
-\subsection{Results}
+\subsection{Output}
 
-\begin{table}[H]
-\centering
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Detector} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{AUC} \\
-\midrule
-Isolation Forest & 95\% & 100\% & 75\% & 0.999 \\
-XGBoost & 100\% & 100\% & 100\% & 1.000 \\
-Logistic Regression & 88\% & 65\% & 100\% & 0.938 \\
-One-Class SVM & 95\% & 91\% & 100\% & 0.958 \\
-\midrule
-\textbf{Ensemble} & \textbf{100\%} & \textbf{100\%} & \textbf{100\%} & \textbf{1.000} \\
-\bottomrule
-\end{tabular}
-\caption{Ensemble achieves perfect anomaly detection on test set (100 samples: 80 normal, 20 anomaly)}
-\end{table}
+\begin{lstlisting}
+{
+    'is_anomaly': True,
+    'score': -0.45,
+    'prediction': 'ANOMALY',
+    'reasons': ['High amount: $5000.00', 'Missing vendor']
+}
+\end{lstlisting}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.98\textwidth]{anomaly_detection_evaluation.png}
-    \caption{Anomaly detection: ensemble perfectly separates normal (green) from anomaly (red) samples}
-\end{figure}
+% ============================================================================
+\section{Layer 6: LangGraph Workflow}
+% ============================================================================
 
-%=============================================================================
-\section{Layer 5: Agentic Workflow (LangGraph)}
-%=============================================================================
+\subsection{Purpose}
 
-\subsection{What Makes It ``Agentic''?}
-The pipeline doesn't just run sequentially --- it \textbf{makes decisions}:
+Orchestrate all the pieces into a coherent pipeline. LangGraph lets us define the flow as a graph with nodes and edges.
+
+\subsection{The Workflow}
 
 \begin{center}
 \begin{tikzpicture}[
-    node distance=1cm,
-    box/.style={rectangle, draw, rounded corners=3pt, minimum width=2cm, minimum height=0.8cm, align=center, font=\footnotesize},
-    decision/.style={diamond, draw, aspect=2.2, minimum width=1.2cm, align=center, font=\scriptsize},
+    node distance=1.2cm,
+    box/.style={rectangle, draw, rounded corners, minimum width=2cm, minimum height=0.8cm, align=center, font=\small},
+    decision/.style={diamond, draw, minimum width=1.5cm, minimum height=1cm, align=center, font=\small},
     arrow/.style={->, thick, >=stealth}
 ]
-    \node[box, fill=primary!15] (start) {Image Input};
-    \node[box, fill=primary!15, right=1.2cm of start] (classify) {Classify};
-    \node[decision, fill=warning!20, right=1.2cm of classify] (chk1) {Receipt?};
-    \node[box, fill=danger!20, above right=0.5cm and 1cm of chk1] (reject) {REJECT};
-    \node[box, fill=success!15, below=0.8cm of chk1] (ocr) {OCR};
-    \node[decision, fill=warning!20, below=0.8cm of ocr] (chk2) {Quality\\OK?};
-    \node[box, fill=success!15, below=0.8cm of chk2] (extract) {Extract};
-    \node[box, fill=warning!15, below=0.8cm of extract] (anomaly) {Anomaly};
-    \node[decision, fill=warning!20, below=0.8cm of anomaly] (chk3) {Normal?};
-    \node[box, fill=success!25, below left=0.5cm and 0.8cm of chk3] (approve) {APPROVE};
-    \node[box, fill=warning!30, below right=0.5cm and 0.8cm of chk3] (review) {REVIEW};
+    \node[box, fill=blue!10] (ingest) {Ingest};
+    \node[box, fill=blue!10, below=of ingest] (classify) {Classify};
+    \node[box, fill=green!10, below=of classify] (ocr) {OCR};
+    \node[decision, fill=yellow!10, below=of ocr] (quality) {Quality\\OK?};
+    \node[box, fill=green!10, below=of quality] (extract) {Extract};
+    \node[box, fill=orange!10, below=of extract] (validate) {Validate};
+    \node[decision, fill=yellow!10, below=of validate] (critical) {Critical\\Issues?};
+    \node[box, fill=red!10, right=2cm of critical] (review) {Human\\Review};
+    \node[box, fill=orange!10, below=of critical] (anomaly) {Anomaly};
+    \node[box, fill=purple!10, below=of anomaly] (route) {Route};
+    \node[box, fill=gray!10, below=of route] (end) {END};
     
-    \draw[arrow] (start) -- (classify);
-    \draw[arrow] (classify) -- (chk1);
-    \draw[arrow] (chk1) -- node[above, font=\scriptsize] {No} (reject);
-    \draw[arrow] (chk1) -- node[right, font=\scriptsize] {Yes} (ocr);
-    \draw[arrow] (ocr) -- (chk2);
-    \draw[arrow] (chk2) -- node[right, font=\scriptsize] {Yes} (extract);
-    \draw[arrow] (chk2.west) -- ++(-0.8,0) |- node[above left, font=\scriptsize] {Retry} (ocr.west);
-    \draw[arrow] (extract) -- (anomaly);
-    \draw[arrow] (anomaly) -- (chk3);
-    \draw[arrow] (chk3) -- node[above, font=\scriptsize] {Yes} (approve);
-    \draw[arrow] (chk3) -- node[above, font=\scriptsize] {No} (review);
+    \draw[arrow] (ingest) -- (classify);
+    \draw[arrow] (classify) -- (ocr);
+    \draw[arrow] (ocr) -- (quality);
+    \draw[arrow] (quality) -- node[right] {Yes} (extract);
+    \draw[arrow] (quality.west) -- ++(-1,0) |- node[above left] {Retry} (ocr.west);
+    \draw[arrow] (extract) -- (validate);
+    \draw[arrow] (validate) -- (critical);
+    \draw[arrow] (critical) -- node[above] {Yes} (review);
+    \draw[arrow] (critical) -- node[right] {No} (anomaly);
+    \draw[arrow] (anomaly) -- (route);
+    \draw[arrow] (route) -- (end);
+    \draw[arrow] (review) |- (end);
 \end{tikzpicture}
 \end{center}
 
-\subsection{Decision Rules}
-\begin{itemize}[itemsep=2pt]
-    \item \textbf{APPROVE} (65\%): Receipt detected ($>$70\% conf), all fields found, no anomalies
-    \item \textbf{REVIEW} (25\%): Low confidence, missing fields, or anomaly detected
-    \item \textbf{REJECT} (10\%): Not a receipt ($>$50\% confidence for ``other'' class)
+\subsection{Key Features}
+
+\begin{itemize}
+    \item \textbf{Conditional Branching}: Different paths based on results
+    \item \textbf{Retry Logic}: OCR can retry up to 3 times
+    \item \textbf{Early Exit}: Non-receipts are rejected immediately
+    \item \textbf{Human-in-the-Loop}: Critical issues go to manual review
 \end{itemize}
 
-%=============================================================================
-\section{Human Feedback Loop}
-%=============================================================================
+% ============================================================================
+\section{Layer 7: Feedback and Learning}
+% ============================================================================
 
-\subsection{How Users Provide Feedback}
-Through a \textbf{Gradio web interface}, users can:
-\begin{enumerate}[itemsep=2pt]
-    \item Upload a receipt image
-    \item See the extracted fields (vendor, date, total)
-    \item Click \checkmark\ (Correct) or $\times$ (Wrong) for each field
-    \item If wrong, enter the correct value
+\subsection{Purpose}
+
+The system improves over time by learning from human corrections.
+
+\subsection{How Feedback Works}
+
+\begin{enumerate}
+    \item User sees the extracted data in Gradio interface
+    \item User clicks \checkmark (correct) or \texttimes (wrong)
+    \item If wrong, user provides the correct value
+    \item Correction is saved to \texttt{feedback\_data/}
 \end{enumerate}
 
-\subsection{How Feedback Improves the Models}
-After \textbf{every 5 corrections}, the system automatically:
+\subsection{Batch Fine-Tuning}
 
-\begin{table}[H]
+After every \textbf{5 corrections}, the system automatically:
+\begin{enumerate}
+    \item Loads all recent feedback
+    \item Fine-tunes the classifier (if document type was wrong)
+    \item Fine-tunes LayoutLM (if field extraction was wrong)
+    \item Updates the models
+\end{enumerate}
+
+\subsection{The FeedbackFineTuner Class}
+
+\begin{lstlisting}
+class FeedbackFineTuner:
+    def finetune_classifier(self, feedback_data):
+        # Actual backpropagation to update classifier weights
+        loss.backward()
+        optimizer.step()
+    
+    def finetune_layoutlm(self, feedback_data):
+        # Update LayoutLM with corrected field labels
+        loss.backward()
+        optimizer.step()
+\end{lstlisting}
+
+This is \textbf{real neural network training}, not just rule updates.
+
+% ============================================================================
+\section{Layer 8: Gradio Interface}
+% ============================================================================
+
+\subsection{Purpose}
+
+Provide a user-friendly web interface for:
+\begin{itemize}
+    \item Uploading receipt images
+    \item Viewing extraction results
+    \item Providing feedback
+\end{itemize}
+
+\subsection{Interface Sections}
+
+\begin{enumerate}
+    \item \textbf{Upload Panel}: Drag and drop receipt image
+    \item \textbf{Agent Results}: Shows the pipeline's decision (Approve/Review/Reject)
+    \item \textbf{OCR Details}: Scrollable section with annotated image showing bounding boxes
+    \item \textbf{Classifier Details}: Document type and confidence
+    \item \textbf{LayoutLM Details}: Extracted fields with confidence scores
+    \item \textbf{Feedback}: Simple \checkmark/\texttimes buttons for each field
+\end{enumerate}
+
+\subsection{OCR Visualization}
+
+The annotated image shows:
+\begin{itemize}
+    \item \textcolor{secondarygreen}{Green boxes}: High confidence ($>80\%$)
+    \item \textcolor{warningyellow}{Yellow boxes}: Medium confidence ($50-80\%$)
+    \item \textcolor{dangerred}{Red boxes}: Low confidence ($<50\%$)
+\end{itemize}
+
+% ============================================================================
+\section{Layer 9: Evaluation and Visualization}
+% ============================================================================
+
+\subsection{Purpose}
+
+Measure how well each component performs and generate visualizations that are automatically saved and pushed to the repository.
+
+\subsection{Output Directory}
+
+All visualizations are saved to:
+\begin{lstlisting}
+assets/images/
+\end{lstlisting}
+
+This directory is tracked by git, so all team members can access the latest evaluation results.
+
+\subsection{Visualizations Generated}
+
+\begin{table}[h]
 \centering
 \begin{tabular}{lp{7cm}}
 \toprule
-\textbf{Mechanism} & \textbf{What Happens} \\
+\textbf{File} & \textbf{Description} \\
 \midrule
-\textbf{Pattern Learning} & New vendor names added to known list immediately \\
-\textbf{Weight Adjustment} & Strategies that made errors get lower weights:\\
-& $w_{\text{new}} = \max(0.2, w_{\text{old}} \times 0.9)$ \\
-\textbf{Anomaly Retraining} & Isolation Forest refits with new normal/anomaly labels \\
-\textbf{Date Format Learning} & Detects user's preferred date format \\
+\texttt{classification\_confusion\_matrices.png} & Document classifier performance (receipt vs non-receipt) \\
+\texttt{anomaly\_confusion\_matrix.png} & Anomaly detector performance (normal vs anomaly) \\
+\texttt{classification\_roc\_curves.png} & ROC curve for document classification \\
+\texttt{anomaly\_roc\_curves.png} & ROC curve for anomaly detection \\
+\texttt{precision\_recall\_curves.png} & Precision-Recall trade-off \\
+\texttt{extraction\_strategy\_comparison.png} & Bar chart comparing extraction strategies \\
+\texttt{confidence\_distribution.png} & Histogram of model confidence scores \\
+\texttt{ensemble\_weights\_viz.png} & Visualization of ensemble voting weights \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-This means the system \textbf{gets better over time} without manual retraining.
+\subsection{Confusion Matrix Details}
 
-%=============================================================================
-\section{Results Summary}
-%=============================================================================
+The confusion matrices show:
 
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Component} & \textbf{Single Model} & \textbf{Ensemble} & \textbf{Improvement} \\
-\midrule
-Document Classification & 98\% & \textbf{100\%} & +2.0\% \\
-Field Extraction (F1) & 72\% & \textbf{79\%} & +7.0\% \\
-Anomaly Detection & 88\% & \textbf{100\%} & +12.0\% \\
-\midrule
-\textbf{Overall Pipeline} & 78\% & \textbf{91\%} & \textbf{+13\%} \\
-\bottomrule
-\end{tabular}
-\caption{Ensemble methods consistently outperform single models}
-\end{table}
+\begin{center}
+\begin{tikzpicture}
+    \draw[thick] (0,0) rectangle (4,4);
+    \draw[thick] (2,0) -- (2,4);
+    \draw[thick] (0,2) -- (4,2);
+    
+    % Labels
+    \node at (1,3) {\textbf{TN}};
+    \node at (3,3) {\textbf{FP}};
+    \node at (1,1) {\textbf{FN}};
+    \node at (3,1) {\textbf{TP}};
+    
+    % Axis labels
+    \node[rotate=90] at (-0.5,2) {Actual};
+    \node at (2,4.5) {Predicted};
+    \node at (1,4.3) {\small Negative};
+    \node at (3,4.3) {\small Positive};
+    \node at (-0.3,3) {\small Neg};
+    \node at (-0.3,1) {\small Pos};
+\end{tikzpicture}
+\end{center}
 
-\subsection{Key Takeaways}
-\begin{enumerate}[itemsep=3pt]
-    \item \textbf{Ensembles work}: 2-13\% improvement across all components
-    \item \textbf{Weighted voting beats averaging}: Calibrated weights based on validation performance
-    \item \textbf{Cascading saves compute}: Use expensive models only when cheap ones are uncertain
-    \item \textbf{Human feedback closes the loop}: Continuous improvement without manual retraining
-    \item \textbf{Production metrics}: 1,000 receipts processed, 95\% success rate, 65\% auto-approved
-\end{enumerate}
-
-%=============================================================================
-\section{Technology Stack}
-%=============================================================================
-
-\begin{itemize}[itemsep=2pt]
-    \item \textbf{Deep Learning}: PyTorch, HuggingFace Transformers (ViT, LayoutLMv3)
-    \item \textbf{Classical ML}: scikit-learn (IsolationForest, SVM), XGBoost
-    \item \textbf{OCR}: EasyOCR
-    \item \textbf{Agent Orchestration}: LangGraph
-    \item \textbf{Interface}: Gradio
-    \item \textbf{Compute}: Google Colab (T4 GPU)
-    \item \textbf{Model Storage}: GitHub with Git LFS ($\sim$550 MB total)
+\begin{itemize}
+    \item \textbf{TN} (True Negative): Correctly identified as not anomaly/not receipt
+    \item \textbf{TP} (True Positive): Correctly identified as anomaly/receipt
+    \item \textbf{FP} (False Positive): Incorrectly flagged (Type I error)
+    \item \textbf{FN} (False Negative): Missed detection (Type II error)
 \end{itemize}
 
-%=============================================================================
-\section{Conclusion}
-%=============================================================================
+\subsection{Auto-Push with GitPusher}
 
-This project demonstrates how to build a \textbf{production-ready agentic AI system} by combining:
+The \texttt{GitPusher} class automatically commits and pushes visualizations:
 
-\begin{enumerate}[itemsep=3pt]
-    \item \textbf{Multi-layer ensembles} --- Different models at each stage, combined with learned weights
-    \item \textbf{Agentic workflow} --- Conditional branching, retries, and human-in-the-loop routing
-    \item \textbf{Continuous learning} --- Feedback-driven weight updates and pattern learning
+\begin{lstlisting}
+class GitPusher:
+    def push_file(self, filepath, message=None):
+        # Adds, commits, and pushes a single file
+        
+    def push_all(self, filepaths, message=None):
+        # Batches multiple files in one commit
+\end{lstlisting}
+
+\textbf{How it works:}
+\begin{enumerate}
+    \item When \texttt{save\_figure()} is called, the image is saved to \texttt{assets/images/}
+    \item GitPusher automatically runs \texttt{git add}, \texttt{git commit}, \texttt{git push}
+    \item Commit message includes timestamp for tracking
 \end{enumerate}
 
-The result is a system that achieves \textbf{100\% classification accuracy}, \textbf{100\% anomaly detection}, and \textbf{79\% field extraction F1}, while improving automatically from user feedback.
+\subsection{EnsembleEvaluator Class}
 
-\vspace{1em}
-\noindent\textbf{Repository}: \url{https://github.com/RogueTex/StreamingDataforModelTraining}
+The main evaluation class provides these methods:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lp{6cm}}
+\toprule
+\textbf{Method} & \textbf{Output} \\
+\midrule
+\texttt{plot\_anomaly\_confusion\_matrix()} & Confusion matrix for anomaly detection \\
+\texttt{plot\_classification\_confusion\_matrices()} & Confusion matrix for document classification \\
+\texttt{plot\_classification\_roc\_curves()} & ROC curves with AUC scores \\
+\texttt{plot\_precision\_recall\_curves()} & PR curves for imbalanced evaluation \\
+\texttt{plot\_extraction\_strategy\_comparison()} & Bar chart of extraction strategy performance \\
+\texttt{push\_all\_figures()} & Batch push all saved figures to GitHub \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Viewing Results}
+
+After running evaluation cells:
+
+\begin{enumerate}
+    \item Figures appear in Colab output
+    \item Simultaneously saved to \texttt{assets/images/}
+    \item Automatically pushed to GitHub
+    \item Team can view at: \texttt{github.com/RogueTex/StreamingDataforModelTraining/assets/images/}
+\end{enumerate}
+
+\subsection{Manual Push (if auto-push fails)}
+
+If running locally or auto-push fails in Colab:
+
+\begin{lstlisting}[language=bash]
+cd /path/to/StreamingDataforModelTraining
+git add assets/images/*.png
+git commit -m "Add evaluation visualizations"
+git push
+\end{lstlisting}
+
+% ============================================================================
+\section{File Structure}
+% ============================================================================
+
+\begin{lstlisting}
+StreamingDataforModelTraining/
+|-- NewVerPynbAgent.ipynb    # Main notebook with all code
+|-- models/
+|   |-- rvl_classifier.pt    # Document classifier
+|   |-- layoutlm_extractor.pt # Field extraction model
+|   |-- anomaly_detector.pt   # Anomaly detection model
+|-- feedback_data/            # Stored user corrections
+|-- assets/images/            # Evaluation visualizations (auto-pushed)
+|-- data/                     # Training data (if any)
+|-- docs/                     # Documentation (this file)
+\end{lstlisting}
+
+% ============================================================================
+\section{Quick Reference: Key Classes}
+% ============================================================================
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{Class} & \textbf{Purpose} \\
+\midrule
+\texttt{DocumentClassifier} & Classifies images as receipt/non-receipt \\
+\texttt{ReceiptOCR} & Extracts text from images using EasyOCR \\
+\texttt{LayoutLMFieldExtractor} & Uses LayoutLM to extract structured fields \\
+\texttt{EnsembleFieldExtractor} & Combines 4 strategies for robust extraction \\
+\texttt{ReceiptAnomalyDetector} & Flags suspicious receipts \\
+\texttt{EnsembleAnomalyDetector} & Combines 4 anomaly detection methods \\
+\texttt{FeedbackFineTuner} & Retrains models from user feedback \\
+\texttt{GitPusher} & Auto-pushes visualizations to GitHub \\
+\texttt{EnsembleEvaluator} & Generates confusion matrices, ROC curves, etc. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================================
+\section{Running the Pipeline}
+% ============================================================================
+
+\subsection{In Google Colab}
+
+\begin{enumerate}
+    \item Open \texttt{NewVerPynbAgent.ipynb} in Colab
+    \item Run cells 1-4 (Setup and Dependencies)
+    \item Run cells 5-30 (Model Loading)
+    \item Run the Gradio cell (cell 57)
+    \item Click the Gradio link to open the interface
+\end{enumerate}
+
+\subsection{Processing a Receipt}
+
+\begin{enumerate}
+    \item Upload an image
+    \item Wait for processing (usually 2-5 seconds)
+    \item Review the results in each accordion section
+    \item Provide feedback if any field is wrong
+    \item After 5 corrections, fine-tuning triggers automatically
+\end{enumerate}
+
+% ============================================================================
+\section{Troubleshooting}
+% ============================================================================
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{Issue} & \textbf{Solution} \\
+\midrule
+``CUDA out of memory'' & Reduce batch size or use CPU \\
+OCR returns empty & Check image quality, try preprocessing \\
+LayoutLM slow & Normal on CPU; use GPU for speed \\
+Git push fails & Check Colab has repo access; run manually \\
+Low confidence scores & Image may be blurry or unusual format \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================================
+\section{Future Improvements}
+% ============================================================================
+
+\begin{itemize}
+    \item Add support for multi-page receipts
+    \item Implement active learning for smarter feedback sampling
+    \item Add support for different languages
+    \item Integrate with expense management systems
+    \item Add receipt categorization (food, travel, office supplies)
+\end{itemize}
 
 \end{document}
