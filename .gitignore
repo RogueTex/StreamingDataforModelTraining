@@ -47,3 +47,8 @@ docs/*.log
 docs/*.out
 docs/*.toc
 docs/*.pdf
+
+# Local fix/helper files (not for repo)
+RESNET_ENSEMBLE_FIX.md
+RVL_CDIP_Classification.ipynb
+apply_resnet_fix.py
