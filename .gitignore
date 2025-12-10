@@ -50,6 +50,15 @@ docs/*.synctex.gz
 docs/*.fls
 docs/*.fdb_latexmk
 
+# Presentation supplementary materials (not for repo)
+docs/anomaly_agentic_presentation.tex
+docs/anomaly_agentic_presentation.pdf
+docs/slide_content_figures.tex
+docs/slide_content_figures.pdf
+docs/slide_content_copy_paste.md
+docs/speaker_notes_anomaly_agentic.md
+docs/ensemble_and_agentic_notes.md
+
 # Local fix/helper files (not for repo)
 RESNET_ENSEMBLE_FIX.md
 RVL_CDIP_Classification.ipynb
