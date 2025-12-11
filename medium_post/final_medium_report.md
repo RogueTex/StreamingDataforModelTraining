@@ -57,6 +57,7 @@ We layer four decisions to stay robust: classification filters out non-receipts;
 1) **Document Classification (ViT + ResNet + stacking)**  
    - Global layout + texture cues; meta-learner balances them.  
    - Outcome: **98%** accuracy.
+   ![Classifier evaluation](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/classifier_evaluation.png)
 
 2) **OCR Ensemble (EasyOCR + TrOCR + PaddleOCR + Tesseract)**  
    - Group by overlapping boxes, vote by confidence.  

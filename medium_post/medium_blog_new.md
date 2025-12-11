@@ -4,16 +4,16 @@ _By Emily, John, Luke, Michael, and Raghu — for Dr. Ghosh’s class_
 
 > We set out to keep expense approvals fast and honest: separate receipts from noise, pull out the fields that matter, and flag the weird ones without drowning reviewers.
 
-![Pipeline summary](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/pipeline_summary.png)
+![Pipeline Header](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/pipeline_summary.png)
 
 ## TL;DR
 - **Goal:** Approve/review/reject receipts with speed and confidence.
 - **Approach:** Four ensembles (classification, OCR, field extraction, anomaly detection) orchestrated by a **LangGraph agent** that retries, routes, and listens to human feedback.
 - **Data:** Synthetic receipts plus a 100-receipt held-out set; feedback data captured in the app.
 - **Results:** 98% doc classification, 99.08% field extraction, ~75% OCR confidence, 98% anomaly F1/AUC.
-- **Try it:** Hugging Face Spaces demo and full repo links below.
+- **Try it:** Hugging Face Spaces demo and full repo information below!
 
-## Why It Matters
+## Why does this matter?
 Bad approvals waste money; slow reviews frustrate teams. Receipts arrive as scans, phone photos, PDFs, and screenshots—often skewed, dim, or missing fields. A brittle pipeline breaks; an agentic one adapts, explains, and improves.
 
 ## Data and Pre-Processing
@@ -23,10 +23,11 @@ Bad approvals waste money; slow reviews frustrate teams. Receipts arrive as scan
 - **Signals:** Eight anomaly features (amount, log_amount, vendor length, date validity, item count, hour, amount per item, weekend), OCR tokens + boxes for LayoutLMv3, and raw images for ViT/ResNet and multi-OCR.
 - **Feedback loop:** Gradio app captures reviewer corrections; those update vendor/date patterns and anomaly labels.
 
-## The Four Ensembles (Plain English)
+## The Four Ensembles Implemented
 1) **Document Classification (ViT + ResNet + stacking)**  
    - Global layout + texture cues; meta-learner balances them.  
    - Outcome: **98%** accuracy.
+   ![Classifier evaluation](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/classifier_evaluation.png)
 
 2) **OCR Ensemble (EasyOCR + TrOCR + PaddleOCR + Tesseract)**  
    - Group by overlapping boxes, vote by confidence.  
