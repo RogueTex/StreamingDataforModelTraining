@@ -8,10 +8,13 @@
 ![Pipeline summary](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/header_image.png)
 
 ## TL;DR
-- **Goal:** Approve/review/reject receipts with speed and confidence.
-- **Approach:** Four ensembles (classification, OCR, field extraction, anomaly detection) orchestrated by a **LangGraph agent** that retries, routes, and listens to human feedback.
-- **Data:** Synthetic receipts plus a 100-receipt held-out set; feedback data captured in the Gradio app.
-- **Results:** 98% doc classification, 99.08% field extraction, ~75% OCR confidence, 98% anomaly F1/AUC; ensemble beats best single model by ~9%.
+We built an end‑to‑end, agentic receipt‑processing system that:
+Classifies images as receipts vs. non‑receipts
+Runs OCR with automatic retries on low‑quality images
+Extracts vendor, date, total and amount using a 4‑way ensemble
+Detects suspicious receipts with an anomaly ensemble
+Routes documents to approve / review / reject using a LangGraph workflow
+Learns from human corrections via a Gradio UI
 - **Try it:** [Hugging Face Spaces demo](https://huggingface.co/spaces/Rogue2003/Receipt_Agent) and full repo links below.
 
 ---
