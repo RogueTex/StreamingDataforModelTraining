@@ -67,6 +67,7 @@ The graphic below shows the ensemble approach we use to solve the problem end to
    - Group by overlapping boxes, vote by confidence.  
    - Outcome: ~**75%** average confidence on tough receipts.  
    ![OCR evaluation — fusion lifts confidence on skewed/low-light receipts](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/ocr_evaluation.png)
+   
    Shown below is OCR extraction on a sample receipt; fields are overlaid with color-coded boxes by confidence to highlight what the ensemble trusts most.
    ![OCR + LayoutLM demonstration](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/OCR_plus_LayoutLMdemonstrationSumamry.png)
 
@@ -115,6 +116,8 @@ Receipts are messy and diverse—fonts, crops, lighting, vendors, and handwritte
 | OCR | ~75% avg confidence |
 | Anomaly Detection | 98.0% accuracy, F1 0.98, AUC 0.99 |
 | Ensemble Benefit | ~+9% vs. best single model |
+
+Below is a walkthrough of the earlier sample receipt: the key fields were detected, the anomalies were cleared, and the agent approved it end to end.
 
 ![End-to-end results summary](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/AGENTIC_WORFLOW_FINAL_RESULT_SUMMARY.png)
 
