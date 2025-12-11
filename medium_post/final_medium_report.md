@@ -40,14 +40,7 @@ The stakes are real: bad approvals waste money; slow reviews frustrate teams. Re
 ---
 
 ## System Overview: An Agentic Multi-Model Pipeline
-Rather than a brittle linear flow, we run a **stateful LangGraph** with shared state, retries, and conditional routing. Each node reads/writes the same state object; the graph decides what to do next based on confidence and previous results:
-```
-[INGEST] → [CLASSIFY] → [OCR] → [EXTRACT] → [ANOMALY] → [ROUTE]
-```
-- **Conditional routing:** If not a receipt, skip to ROUTE and reject; otherwise continue.
-- **Retries:** OCR re-runs with image enhancement if confidence < 0.7.
-- **Shared state:** Carries image, OCR results, extracted fields, anomaly score, decision, and a processing log for explainability.
-- **Feedback-aware:** Every few corrections triggers updates to patterns, thresholds, and ensemble weights.
+At a high level, every document passes through six stages. First, a document classification ensemble determines whether the input is actually a receipt; only receipts move forward. Second, OCR turns pixels into text, capturing strings and bounding boxes. Third, a four-way ensemble extracts structured fields (vendor, date, total, amount). Fourth, an anomaly ensemble evaluates whether the transaction looks suspicious based on engineered features. Fifth, a LangGraph workflow aggregates outputs and makes an approve/review/reject decision. Finally, when humans correct predictions, a feedback loop uses those corrections to fine-tune patterns and re-weight ensembles over time.
 
 
 
