@@ -197,7 +197,7 @@ result = workflow.invoke({"image": uploaded_bytes})
 - **Human feedback closes the loop** without constant full retrains.
 
 ## Conclusion and Next Steps
-This agentic, feedback-aware stack keeps receipt decisions fast, explainable, and resilient to messy inputs—exactly what we set out to deliver for Dr. Ghosh’s course project. Next up: stronger multilingual OCR, richer anomaly features (frequency drift, geo/time coherence), and per-customer threshold auto-tuning.
+This agentic, feedback-aware stack keeps receipt decisions fast, explainable, and resilient to messy inputs—exactly what we set out to deliver for Dr. Ghosh’s Advanced Machine Learning course (Fall ’25). Thank you, Dr. Ghosh, for your guidance throughout the semester. Next up: stronger multilingual OCR, richer anomaly features (frequency drift, geo/time coherence), and per-customer threshold auto-tuning.
 
 ---
 
