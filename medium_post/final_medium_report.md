@@ -68,8 +68,18 @@ Instead of a brittle linear flow, we run a **stateful LangGraph** with shared st
    - Weighted average + majority vote (≥2 of 4 must flag).  
    - Outcome: **98.0%** accuracy, F1 **0.98**, AUC **0.99**.  
    ![Anomaly evaluation — ensemble bumps AUC vs individual models](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/anomaly_detection_evaluation.png)  
-   ![Anomaly comparison — weighted vote outperforms single models](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/anomaly_model_comparison.png)  
-   ![Anomaly confusion matrix — balanced approvals vs reviews/rejects](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/anomaly_confusion_matrix.png)
+
+We run anomaly detection to catch outliers, missing fields, and suspicious patterns before anything is auto-approved. Examples we flag:
+
+| Anomaly Type            | Example                     |
+|-------------------------|-----------------------------|
+| Unusually high amounts  | $50,000 for coffee          |
+| Missing critical fields | No vendor name              |
+| Invalid dates           | February 30th, 2025         |
+| Suspicious timing       | 3 AM transactions           |
+| Data integrity issues   | Negative totals             |
+| Statistical outliers    | 500 items on one receipt    |
+
 
 ### Inside Each Ensemble
 For classification, we blend ViT-Tiny (LoRA-finetuned for global layout), a fine-tuned ViT-10k, and ResNet18 for texture, then stack them with XGBoost so a meta-learner can trust the right signals. OCR combines EasyOCR, TrOCR (fine-tuned on receipts), PaddleOCR, and Tesseract, leaning on weighted voting because each engine fails on different fonts and angles. Field extraction mixes LayoutLMv3 (fine-tuned), regex for dates/amounts, positional heuristics for common layouts, and NER for vendors, weighted 35/25/20/20 with a 1.2× agreement bonus to reward consensus. Anomalies use Isolation Forest (outliers), XGBoost (supervised patterns), HistGradientBoosting (robust to missingness), and One-Class SVM (boundary), with a weighted vote plus a majority gate to avoid lone-model vetoes.
