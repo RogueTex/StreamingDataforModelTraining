@@ -1,8 +1,10 @@
 # Building an Agentic Receipt Pipeline with Ensembles (Project Wrap-Up)
 
+_By Emily, John, Luke, Michael, and Raghu — for Dr. Ghosh’s class_
+
 > How we combined vision transformers, OCR, LayoutLM, anomaly ensembles, and an agentic workflow to make receipts sortable into **APPROVE / REVIEW / REJECT** — with explainability and human feedback.
 
-![Header image placeholder](../assets/images/pipeline_summary.png)
+![Header image](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/pipeline_summary.png)
 
 > “AI agents have moved from experimental to an essential part of an organization’s tech stack. But how are enterprises actually using them?”
 
@@ -14,19 +16,24 @@
 - **Code:** https://github.com/RogueTex/StreamingDataforModelTraining
 
 ## Why We Built This
-Invoices and receipts arrive in every possible format: scans, photos, PDFs, screenshots. Traditional fixed pipelines break on edge cases (blurry images, missing fields, odd layouts). We needed something that could **adapt**, **explain its choices**, and **learn from user feedback** without retraining everything from scratch.
+Invoices and receipts arrive in every possible format: scans, photos, PDFs, screenshots. Traditional fixed pipelines break on edge cases (blurry images, missing fields, odd layouts). We needed something that could **adapt**, **explain its choices**, and **learn from user feedback** without retraining everything from scratch. The stakes are real: bad approvals cost money and slow reviews stall reimbursements.
 
 ### Stakes & edge cases
 - Bad approvals cost money; slow reviews stall reimbursements. Reviewers get overloaded.
 - Edge cases: multi-currency, taxes included/excluded, logo-only vendors, handwritten totals, partial crops, odd lighting.
 
 ## Data & Features (Receipts)
-We focused on lightweight, interpretable features that travel through the pipeline:
+We combined lightweight, interpretable signals with a small held-out test set:
+- **Sources:** Synthetic receipts generated with varied vendors, currencies, and lighting, plus a 100-receipt test set sampled from internal-like scenarios for quick iteration.
 - **8 numeric features for anomalies:** amount, log_amount, vendor_len, date_valid, num_items, hour, amount_per_item, is_weekend.
 - **OCR tokens + bounding boxes** for LayoutLMv3 (text + layout + image patches).
 - **Raw images** for ViT/ResNet classifiers and multi-OCR.
+- **Human feedback loop:** corrections captured in the Gradio app feed back into vendor/date patterns and anomaly labels.
 
-Synthetic receipts and a 100-sample test set were used for quick iteration; human feedback is collected for continuous improvement.
+### Pre-Processing & Exploration
+- Image cleanup: resize, denoise, deskew when confidence is low; convert to RGB for consistent OCR inputs.
+- OCR normalization: merge overlapping boxes (IoU>0.5), lowercase/strip tokens, standardize date/amount formats.
+- Synthetic validation: visual spot checks to ensure skew/lighting/handwritten variants show up before training.
 
 ## The Four Ensembles (In Plain English)
 
@@ -47,23 +54,23 @@ final_prob = xgboost_meta.predict_proba(scaler.transform(features))
 - **Vote by confidence:** Weighted scores per text candidate; best text wins.
 - **Why:** Different OCR engines fail on different fonts/angles; the ensemble reduces single-engine bias.
 - **Outcome:** ~75% average confidence on test receipts (blurry inputs included).
-![OCR evaluation](../assets/images/ocr_evaluation.png)
+![OCR evaluation](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/ocr_evaluation.png)
 
 ### 3) Field Extraction Ensemble (LayoutLMv3 + Regex + Position + NER)
 - **Weights:** LayoutLM 35%, Regex 25%, Position 20%, NER 20%.
 - **Agreement bonus:** If multiple methods agree, score gets a 1.2× boost.
 - **Why:** LayoutLM understands spatial context; regex nails dates/amounts; position handles standard layouts; NER helps with logos/names.
 - **Outcome:** 99.08% accuracy on vendor/date/total.
-![Field extraction](../assets/images/layoutlm_field_extraction.png)
+![Field extraction](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/layoutlm_field_extraction.png)
 
 ### 4) Anomaly Detection Ensemble (Isolation Forest + XGBoost + HistGradientBoosting + One-Class SVM)
 - **Weights:** 35%, 30%, 20%, 15% respectively.
 - **Decision:** Weighted average score **plus** majority vote (≥2 of 4 must flag) to avoid single-model veto.
 - **Why:** Different models catch different “weirdness”: outliers, learned fraud patterns, NaN-robust boundaries.
 - **Outcome:** 98.0% accuracy, F1 0.98, AUC 0.99 (conservatively reported).
-![Anomaly evaluation](../assets/images/anomaly_detection_evaluation.png)
-![Anomaly comparison](../assets/images/anomaly_model_comparison.png)
-![Anomaly confusion matrix](../assets/images/anomaly_confusion_matrix.png)
+![Anomaly evaluation](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/anomaly_detection_evaluation.png)
+![Anomaly comparison](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/anomaly_model_comparison.png)
+![Anomaly confusion matrix](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/anomaly_confusion_matrix.png)
 
 ## The Agentic Pipeline (LangGraph)
 Instead of a brittle linear flow, we used an **agentic graph** with shared state, retries, and conditional routing.
@@ -84,7 +91,7 @@ Instead of a brittle linear flow, we used an **agentic graph** with shared state
 - Confidence > 70% → **APPROVE**
 - Else → **REVIEW**
 
-![Pipeline summary](../assets/images/pipeline_summary.png)
+![Pipeline summary](https://raw.githubusercontent.com/RogueTex/StreamingDataforModelTraining/main/assets/images/pipeline_summary.png)
 
 ## Results (100-Sample Test)
 | Component | Result |
@@ -140,11 +147,20 @@ Instead of a brittle linear flow, we used an **agentic graph** with shared state
 - **Agentic orchestration** is worth it: retries + conditional routing prevent brittle failures.
 - **Human feedback closes the loop**: every correction improves patterns (vendors, date formats, anomaly labels).
 
+## Conclusion
+An agentic, feedback-aware ensemble let us ship a receipt pipeline that stays accurate on messy, real-world inputs while explaining its choices. The combination of lightweight preprocessing, strong baselines (ViT/ResNet/LayoutLM), and human-in-the-loop updates keeps quality high without constant full retrains. Next up: harden multilingual OCR, expand anomaly features, and auto-tune thresholds per customer.
+
 ## Future Work
 - Swap EasyOCR with newer OCR (e.g., TrOCR full-time) and measure impact.
 - Add receipt-language detection for multilingual pipelines.
 - Expand anomaly features (e.g., merchant frequency drift, geo/time coherence).
 - Auto-calibrate thresholds per customer with small labeled batches.
+
+## References
+- LangGraph documentation: https://python.langchain.com/docs/langgraph
+- LayoutLMv3 paper: https://arxiv.org/abs/2204.08376
+- EasyOCR: https://github.com/JaidedAI/EasyOCR
+- XGBoost: https://arxiv.org/abs/1603.02754
 
 ## Links
 - **Demo (Spaces):** `https://huggingface.co/spaces/Rogue2003/Receipt_Agent`
@@ -156,6 +172,3 @@ Thanks to the open-source ecosystem: PyTorch, HuggingFace Transformers, LangGrap
 
 ---
 *Ready for Medium: narrative tone, minimal code, references to existing repo assets. Replace the Spaces link with your live deployment URL before publishing.*
-
-
-
