@@ -1,32 +1,37 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.env
-.venv
-venv/
-ENV/
-
-# Jupyter Notebook
+# Jupyter
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Model files (too large for git, download separately)
-# Uncomment if you want to exclude models from git:
-# models/*.pt
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
 
-# Data files
-data/dataset_cache/
-data/.DS_Store
-.DS_Store
+# Virtual environments
+.venv/
+env/
+venv/
 
-# IDE
-.idea/
+# Data files (use DVC or cloud storage)
+*.csv
+*.parquet
+*.jsonl
+data/
+datasets/
+
+# Model artifacts
+*.pt
+*.pth
+*.h5
+*.keras
+*.pkl
+checkpoints/
+models/
+
+# IDEs
 .vscode/
-*.swp
-*.swo
+.idea/
 
 # OS
 .DS_Store
@@ -35,33 +40,3 @@ Thumbs.db
 # Logs
 *.log
 logs/
-
-# Temporary files
-*.tmp
-*.temp
-
-# Documentation (LaTeX build artifacts only)
-# Keep .tex source files for version control
-docs/*.aux
-docs/*.log
-docs/*.out
-docs/*.toc
-docs/*.synctex.gz
-docs/*.fls
-docs/*.fdb_latexmk
-
-# Presentation supplementary materials (not for repo)
-docs/anomaly_agentic_presentation.tex
-docs/anomaly_agentic_presentation.pdf
-docs/slide_content_figures.tex
-docs/slide_content_figures.pdf
-docs/slide_content_copy_paste.md
-docs/speaker_notes_anomaly_agentic.md
-docs/ensemble_and_agentic_notes.md
-report_submission_checklist.md
-submission_answers.tex
-
-# Local fix/helper files (not for repo)
-RESNET_ENSEMBLE_FIX.md
-RVL_CDIP_Classification.ipynb
-apply_resnet_fix.py
